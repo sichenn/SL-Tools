@@ -1,0 +1,61 @@
+// Globals 
+global string $scriptVersion = "0.0.1";
+global string $gMainWindow;
+string  $installedVersion =  `optionVar -q "sl_tools_version"`;
+
+catchQuiet(python("import sys\nimport importlib\npython_version = sys.version_info.major"));
+
+
+// Recreate icons if the version is different
+if (`optionVar -exists "sl_tools_version"` && $scriptVersion != $installedVersion)
+    {
+    catchQuiet(python("import sl_generate_icons"));
+    catchQuiet(python("sl_generate_icons.sl_generate_icons()"));
+    }
+    
+// Set optionVar to the current version
+optionVar -sv "sl_tools_version" $scriptVersion;
+
+// Check if auto update is active and silently check it
+int  $silentlyAutoCheckUpdate =  `optionVar -q "sl_check_for_updates_auto_active"`;
+if (`optionVar -exists "sl_check_for_updates_auto_active"` && $silentlyAutoCheckUpdate != 0)
+    {
+    catchQuiet(python("import gt_check_for_updates"));
+    catchQuiet(python("sl_check_for_updates.silent_update_check()"));
+    }
+    
+if (`optionVar -exists "sl_check_for_updates_auto_active"` == 0) // First time running
+    {
+    optionVar -sv "sl_check_for_updates_auto_active" 1;
+    optionVar -sv "sl_check_for_updates_interval_days" 15;
+    }
+    
+    
+// Removes existing menu in case it exists
+if (`menu -q -exists slToolsMenu`)
+    {
+    menu -e -dai slToolsMenu;
+    }
+else
+    {
+    setParent $gMainWindow ;
+    menu -l "SL Tools" -p MayaWindow -to true slToolsMenu ;
+    }
+
+setParent -menu slToolsMenu ;
+
+// -----------------------------------------TOOLS------------------------------------
+menuItem -l "Vertex Paint" -sm true -to true -image "toolSettings.png";
+    menuItem 
+    -l ("Make Color Meshes") 
+    -c ("python(\"import gt_renamer\\nif python_version==3:\\n\\timportlib.reload(gt_renamer)\\nelse:\\n\\treload(gt_renamer)\\ngt_renamer.build_gui_renamer()\");") 
+    -ann ("Duplicate selected meshes and make proxy color meshes.") 
+    -image "renamePreset.png" ;
+
+    menuItem 
+    -l ("Transfer Colors") 
+    -c ("python(\"import gt_renamer\\nif python_version==3:\\n\\timportlib.reload(gt_renamer)\\nelse:\\n\\treload(gt_renamer)\\ngt_renamer.build_gui_renamer()\");") 
+    -ann ("Transfer single-channel color attributes.") 
+    -image "renamePreset.png";
+    
+    setParent -menu ".." ;
